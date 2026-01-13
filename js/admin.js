@@ -446,30 +446,113 @@ function loadServicesAdmin() {
         }
     });
 }
+// --- GESTIÓN DE SERVICIOS (ADMIN) ---
 
-// Agregar Servicio
+let globalServices = []; // Variable para guardar los servicios cargados
+
+function loadServicesAdmin() {
+    const list = document.getElementById('servicesList');
+    list.innerHTML = "Cargando...";
+    
+    fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "get_services" }) })
+    .then(r => r.json())
+    .then(res => {
+        list.innerHTML = "";
+        if(res.success && res.data.length > 0) {
+            globalServices = res.data; // Guardamos en memoria para editar fácil
+            
+            res.data.forEach(s => {
+                const li = document.createElement('li');
+                li.style.cssText = "padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;";
+                
+                // Mostrar recomendación cortada si es muy larga
+                const shortRec = s.recomendaciones ? s.recomendaciones.substring(0, 30) + "..." : "Sin rec.";
+
+                li.innerHTML = `
+                    <div style="flex:1;">
+                        <span style="font-weight:600;">${s.nombre_servicio}</span><br>
+                        <small style="color:#888;">${shortRec}</small>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button onclick="openEditService('${s.id}')" style="background:none; border:none; color:#3498db; cursor:pointer;" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteService('${s.id}')" style="background:none; border:none; color:red; cursor:pointer;" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        } else {
+            list.innerHTML = "<p>No hay servicios configurados.</p>";
+        }
+    });
+}
+
+// 1. Agregar Servicio (Actualizado con recomendaciones)
 const formService = document.getElementById('formService');
 if(formService) {
     formService.addEventListener('submit', (e) => {
         e.preventDefault();
-        const name = document.getElementById('serviceName').value;
+        const data = {
+            nombre: document.getElementById('serviceName').value,
+            recomendaciones: document.getElementById('serviceRecs').value
+        };
         
         fetch(API_URL, { 
             method: "POST", 
-            body: JSON.stringify({ action: "add_service", nombre: name }) 
+            body: JSON.stringify({ action: "add_service", data: data }) 
         })
         .then(r => r.json())
         .then(() => {
             document.getElementById('serviceName').value = "";
-            loadServicesAdmin(); // Recargar lista
+            document.getElementById('serviceRecs').value = "";
+            loadServicesAdmin(); 
         });
     });
 }
 
-// Borrar Servicio
+// 2. Funciones de Edición
+window.openEditService = function(id) {
+    const service = globalServices.find(s => s.id === id);
+    if(service) {
+        document.getElementById('editServiceId').value = service.id;
+        document.getElementById('editServiceName').value = service.nombre_servicio;
+        document.getElementById('editServiceRecs').value = service.recomendaciones;
+        openModal('modalEditService');
+    }
+}
+
+const formEditService = document.getElementById('formEditService');
+if(formEditService) {
+    formEditService.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const data = {
+            id: document.getElementById('editServiceId').value,
+            nombre: document.getElementById('editServiceName').value,
+            recomendaciones: document.getElementById('editServiceRecs').value
+        };
+        
+        fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "update_service", data: data })
+        })
+        .then(r => r.json())
+        .then(res => {
+            if(res.success) {
+                closeModal('modalEditService');
+                loadServicesAdmin();
+            } else {
+                alert("Error: " + res.message);
+            }
+        });
+    });
+}
+
+// 3. Borrar Servicio
 window.deleteService = function(id) {
     if(!confirm("¿Borrar este servicio?")) return;
-    
     fetch(API_URL, { 
         method: "POST", 
         body: JSON.stringify({ action: "delete_service", id: id }) 
