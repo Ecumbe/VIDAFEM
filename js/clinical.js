@@ -162,43 +162,72 @@ function loadAppointmentHistory(patientId) {
 // --- FUNCIONES DE AGENDAMIENTO ---
 
 // Hacemos global openAppointmentModal para el botón HTML
+// js/clinical.js
+
 window.openAppointmentModal = function() {
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get('id');
     const inputId = document.getElementById('apptPatientId');
     if(inputId) inputId.value = id;
     
-    // Cargar Servicios
+    // CAMBIO IMPORTANTE AQUÍ:
     const select = document.getElementById('apptReason');
+    const txtRecs = document.getElementById('apptRecs'); // El cuadro de texto
+
     if(select) {
         select.innerHTML = '<option>Cargando servicios...</option>';
         fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "get_services" }) })
         .then(r => r.json())
         .then(res => {
-            select.innerHTML = "";
+            select.innerHTML = '<option value="">Selecciona un servicio...</option>';
+            
             if(res.success && res.data.length > 0) {
                 res.data.forEach(s => {
                     const opt = document.createElement('option');
                     opt.value = s.nombre_servicio;
                     opt.innerText = s.nombre_servicio;
+                    
+                    // AQUÍ ESTÁ EL TRUCO: Guardamos la recomendación en un atributo oculto
+                    // Usamos encodeURIComponent para evitar problemas con comillas o espacios raros
+                    opt.setAttribute('data-recs', s.recomendaciones || "");
+                    
                     select.appendChild(opt);
                 });
-            } else {
-                select.innerHTML = '<option value="Consulta">Consulta General</option>';
             }
         });
+
+        // ESCUCHAR EL CAMBIO (Dispara el autollenado)
+        select.onchange = function() {
+            // Obtener la opción seleccionada
+            const selectedOption = select.options[select.selectedIndex];
+            // Leer el dato oculto
+            const savedRecs = selectedOption.getAttribute('data-recs');
+            
+            // Si hay cuadro de texto y hay recomendación, llenarlo
+            if(txtRecs) {
+                if (savedRecs) {
+                    txtRecs.value = savedRecs;
+                    // Efecto visual opcional (resaltar amarillo un segundo)
+                    txtRecs.style.backgroundColor = "#fff9c4";
+                    setTimeout(() => txtRecs.style.backgroundColor = "#fff", 500);
+                } else {
+                    txtRecs.value = ""; // Limpiar si no tiene
+                }
+            }
+        };
     }
 
     // Configurar fecha mínima
     const dateInput = document.getElementById('apptDate');
     if(dateInput) {
         dateInput.min = new Date().toISOString().split('T')[0];
-        // Listener para cargar horas (se asegura de no duplicar)
         dateInput.onchange = loadAvailableHours; 
     }
 
     window.openModal('modalAppointment');
 }
+
+
 
 function loadAvailableHours() {
     const dateVal = document.getElementById('apptDate').value;
