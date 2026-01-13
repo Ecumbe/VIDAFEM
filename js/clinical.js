@@ -1,7 +1,18 @@
-// js/clinical.js - Controlador Principal del Expediente
+// js/clinical.js - Controlador Principal del Expediente (Versión Blindada)
+
+// Hacemos estas funciones GLOBALES para que el HTML siempre las encuentre
+window.openModal = function(id) {
+    const modal = document.getElementById(id);
+    if(modal) modal.classList.add('active');
+}
+
+window.closeModal = function(id) {
+    const modal = document.getElementById(id);
+    if(modal) modal.classList.remove('active');
+}
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Obtener ID
+    // 1. Obtener ID del paciente
     const urlParams = new URLSearchParams(window.location.search);
     const patientId = urlParams.get('id');
 
@@ -15,10 +26,12 @@ document.addEventListener('DOMContentLoaded', () => {
     loadMiniHeader(patientId);
 
     // 3. Cargar la pestaña por defecto (Historial)
-    // Ahora delegamos la tarea al nuevo archivo history.js
     if(typeof loadHistoryModule === 'function') {
         loadHistoryModule(patientId);
     }
+    
+    // 4. Configurar listeners de Citas si existen los elementos
+    setupAppointmentListeners();
 });
 
 // Carga solo la barrita superior con ID y Edad
@@ -32,7 +45,6 @@ function loadMiniHeader(id) {
         if (response.success) {
             const patient = response.data.find(p => String(p.id_paciente) === String(id));
             if (patient) {
-                // Llenar datos mini
                 safeText('headerPatientName', patient.nombre_completo);
                 safeText('clinName', patient.nombre_completo);
                 safeText('clinId', "ID: " + patient.cedula);
@@ -42,7 +54,6 @@ function loadMiniHeader(id) {
     });
 }
 
-// Helper seguro
 function safeText(elementId, text) {
     const el = document.getElementById(elementId);
     if (el) el.innerText = text || "---";
@@ -59,12 +70,15 @@ function calculateAge(dateString) {
 }
 
 // --- SISTEMA DE PESTAÑAS (ROUTER) ---
-function switchTab(tabName) {
-    // UI Updates...
+// Hacemos global también la función switchTab por si acaso
+window.switchTab = function(tabName) {
+    // UI Updates
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
     
+    // Activar botón (Buscamos el que tenga el onclick correspondiente)
     const buttons = document.querySelectorAll('.tab-btn');
+    // Mapeo simple basado en el orden de tus botones en el HTML
     if(tabName === 'historial') buttons[0].classList.add('active');
     if(tabName === 'citas') buttons[1].classList.add('active');
     if(tabName === 'diagnostico') buttons[2].classList.add('active');
@@ -81,7 +95,7 @@ function switchTab(tabName) {
         loadHistoryModule(id);
     }
 
-    // B. CITAS (ESTO ES LO NUEVO QUE FALTABA)
+    // B. CITAS
     if (tabName === 'citas') {
         loadAppointmentHistory(id);
     }
@@ -91,11 +105,12 @@ function switchTab(tabName) {
         loadDiagnosesList(id);
     }
 }
-// ... (resto del archivo arriba) ...
 
 // --- LISTA DE CITAS DEL PACIENTE + REAGENDAR ---
 function loadAppointmentHistory(patientId) {
     const container = document.querySelector('#tab-citas .clinical-timeline-container');
+    if (!container) return; // Protección si no existe
+    
     container.innerHTML = '<p>Cargando historial...</p>';
 
     fetch(API_URL, {
@@ -144,22 +159,148 @@ function loadAppointmentHistory(patientId) {
     });
 }
 
-// Lógica del Modal Reagendar (IGUAL QUE EN AGENDA.JS)
-function openReschedule(idCita) {
-    document.getElementById('reschIdCita').value = idCita;
-    const dateIn = document.getElementById('reschDate');
-    dateIn.value = "";
-    dateIn.min = new Date().toISOString().split('T')[0];
-    dateIn.addEventListener('change', loadRescheduleHours); // Activar listener
+// --- FUNCIONES DE AGENDAMIENTO ---
+
+// Hacemos global openAppointmentModal para el botón HTML
+window.openAppointmentModal = function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get('id');
+    const inputId = document.getElementById('apptPatientId');
+    if(inputId) inputId.value = id;
     
-    document.getElementById('reschTime').innerHTML = '<option>Selecciona fecha...</option>';
-    document.getElementById('modalReschedule').classList.add('active');
+    // Cargar Servicios
+    const select = document.getElementById('apptReason');
+    if(select) {
+        select.innerHTML = '<option>Cargando servicios...</option>';
+        fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "get_services" }) })
+        .then(r => r.json())
+        .then(res => {
+            select.innerHTML = "";
+            if(res.success && res.data.length > 0) {
+                res.data.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.nombre_servicio;
+                    opt.innerText = s.nombre_servicio;
+                    select.appendChild(opt);
+                });
+            } else {
+                select.innerHTML = '<option value="Consulta">Consulta General</option>';
+            }
+        });
+    }
+
+    // Configurar fecha mínima
+    const dateInput = document.getElementById('apptDate');
+    if(dateInput) {
+        dateInput.min = new Date().toISOString().split('T')[0];
+        // Listener para cargar horas (se asegura de no duplicar)
+        dateInput.onchange = loadAvailableHours; 
+    }
+
+    window.openModal('modalAppointment');
+}
+
+function loadAvailableHours() {
+    const dateVal = document.getElementById('apptDate').value;
+    const timeSelect = document.getElementById('apptTime');
+    if(!dateVal || !timeSelect) return;
+    
+    timeSelect.innerHTML = '<option>Verificando...</option>';
+    timeSelect.disabled = true;
+
+    fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "get_taken_slots", fecha: dateVal }) })
+    .then(r => r.json())
+    .then(res => {
+        const taken = res.data || [];
+        timeSelect.innerHTML = "";
+        timeSelect.disabled = false;
+        
+        let hasSlots = false;
+        for (let h = 9; h <= 16; h++) {
+            ["00", "30"].forEach(m => {
+                if(h===16 && m==="30") return;
+                const hStr = h < 10 ? `0${h}` : `${h}`;
+                const t = `${hStr}:${m}`;
+                if (!taken.includes(t)) {
+                    const opt = document.createElement('option');
+                    opt.value = t; opt.innerText = t;
+                    timeSelect.appendChild(opt);
+                    hasSlots = true;
+                }
+            });
+        }
+        if(!hasSlots) timeSelect.innerHTML = "<option>Sin cupos</option>";
+    });
+}
+
+function setupAppointmentListeners() {
+    const formAppt = document.getElementById('formAppointment');
+    if(formAppt) {
+        // Remover listeners anteriores para evitar duplicados si se llama varias veces
+        const newForm = formAppt.cloneNode(true);
+        formAppt.parentNode.replaceChild(newForm, formAppt);
+        
+        newForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = this.querySelector('button');
+            const originalText = btn.innerText;
+            btn.disabled = true; btn.innerText = "Enviando...";
+
+            const data = {
+                id_paciente: document.getElementById('apptPatientId').value,
+                fecha: document.getElementById('apptDate').value,
+                hora: document.getElementById('apptTime').value,
+                motivo: document.getElementById('apptReason').value + " | Nota: " + document.getElementById('apptNotes').value,
+                recomendaciones: document.getElementById('apptRecs').value,
+                creado_por: "DOCTOR"
+            };
+
+            fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "schedule_appointment", data: data })
+            })
+            .then(r => r.json())
+            .then(response => {
+                if (response.success) {
+                    alert("Cita agendada.");
+                    window.closeModal('modalAppointment');
+                    this.reset();
+                    // Recargar lista si estamos en la pestaña
+                    const urlParams = new URLSearchParams(window.location.search);
+                    loadAppointmentHistory(urlParams.get('id'));
+                } else {
+                    alert(response.message);
+                }
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerText = originalText;
+            });
+        });
+    }
+}
+
+// --- LÓGICA DE REAGENDAR (GLOBALES) ---
+window.openReschedule = function(idCita) {
+    const inputId = document.getElementById('reschIdCita');
+    const dateIn = document.getElementById('reschDate');
+    const timeIn = document.getElementById('reschTime');
+    
+    if(inputId) inputId.value = idCita;
+    if(dateIn) {
+        dateIn.value = "";
+        dateIn.min = new Date().toISOString().split('T')[0];
+        dateIn.onchange = loadRescheduleHours;
+    }
+    if(timeIn) timeIn.innerHTML = '<option>Selecciona fecha...</option>';
+    
+    window.openModal('modalReschedule');
 }
 
 function loadRescheduleHours() {
     const dateVal = document.getElementById('reschDate').value;
     const timeSelect = document.getElementById('reschTime');
-    if(!dateVal) return;
+    if(!dateVal || !timeSelect) return;
     
     timeSelect.innerHTML = '<option>Cargando...</option>';
     fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "get_taken_slots", fecha: dateVal }) })
@@ -181,7 +322,7 @@ function loadRescheduleHours() {
     });
 }
 
-// Listener del formulario
+// Configurar listener del formulario de reagendar
 const formResch = document.getElementById('formReschedule');
 if(formResch) {
     formResch.addEventListener('submit', function(e) {
@@ -204,8 +345,7 @@ if(formResch) {
         .then(res => {
             if(res.success) {
                 alert("Cita reagendada.");
-                closeModal('modalReschedule');
-                // Recargar lista
+                window.closeModal('modalReschedule');
                 const urlParams = new URLSearchParams(window.location.search);
                 loadAppointmentHistory(urlParams.get('id'));
             } else {
