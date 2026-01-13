@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historia Clínica - VIDAFEM</title>
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="overlay" id="overlay"></div>
+
+    <nav class="sidebar" id="sidebar">
+        <div class="toggle-desktop" id="toggleDesktop"><i class="fas fa-chevron-left"></i></div>
+        <div class="sidebar-header">
+            <img src="assets/logo2.png" class="logo-icon" alt="Opciones">
+            <span class="brand-text">Opciones</span>
+        </div>
+        <ul class="sidebar-menu">
+            <li class="menu-item">
+                <a href="admin.html" class="menu-link warning-link">
+                    <i class="fas fa-arrow-left"></i> <span>Salir / Volver</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="#" class="menu-link active">
+                    <i class="fas fa-file-medical-alt"></i> <span>Expediente Actual</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="main-wrapper">
+        
+        <header class="top-bar">
+            <div class="top-left">
+                <button class="menu-toggle-mobile" id="toggleMobile"><i class="fas fa-bars"></i></button>
+                <div class="user-welcome">
+                    <span class="welcome-label">Paciente:</span>
+                    <span class="user-name-display" id="headerPatientName">Cargando...</span>
+                </div>
+            </div>
+            <img src="assets/logo.png" alt="Logo VIDAFEM" class="top-right-logo">
+        </header>
+
+        <div class="dashboard-content">
+            
+            <section class="view-section active">
+                
+                <div class="patient-header-mini">
+                    <div class="mini-info">
+                        <h2 id="clinName">--</h2>
+                        <span class="tag-id" id="clinId">ID: --</span>
+                        <span class="tag-age" id="clinAge">-- años</span>
+                    </div>
+                </div>
+
+                <div class="tabs-container">
+                    <button class="tab-btn active" onclick="switchTab('historial')">
+                        <i class="fas fa-user-injured"></i> Historial Clínico
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('citas')">
+                        <i class="fas fa-calendar-alt"></i> Citas Agendadas
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('diagnostico')">
+                        <i class="fas fa-stethoscope"></i> Diagnóstico
+                    </button>
+                </div>
+
+<div id="tab-historial" class="tab-content active">
+                    
+                    <div class="action-header" style="display:flex; justify-content:flex-end; margin-bottom:15px;">
+                        <button class="btn-primary-small" id="btnGlobalEdit" onclick="toggleGlobalEdit()">
+                            <i class="fas fa-edit"></i> Editar Información
+                        </button>
+                    </div>
+
+                    <div class="card history-card">
+                        <div class="card-title">
+                            <i class="fas fa-id-card"></i> Información del Paciente
+                        </div>
+                        <div class="detail-grid">
+                            <div class="detail-item"><label>Nombres y Apellidos</label> <span id="h_nombre">--</span></div>
+                            <div class="detail-item"><label>Cédula</label> <span id="h_cedula">--</span></div>
+                            <div class="detail-item"><label>Edad</label> <span id="h_edad">--</span></div>
+                            <div class="detail-item"><label>F. Nacimiento</label> <span id="h_fecha">--</span></div>
+                            <div class="detail-item"><label>Ocupación</label> <span id="h_ocupacion">--</span></div>
+                            <div class="detail-item"><label>Dirección</label> <span id="h_direccion">--</span></div>
+                        </div>
+                    </div>
+
+                    <form id="formHistory">
+                        
+                        <div class="card history-card">
+                            <div class="card-title">
+                                <i class="fas fa-file-medical-alt"></i> Antecedentes Patológicos
+                            </div>
+                            <div class="detail-grid">
+                                <div class="detail-item full-width">
+                                    <label>APP (Patológicos Personales)</label>
+                                    <textarea name="app" class="input-field history-input" disabled></textarea>
+                                </div>
+                                <div class="detail-item full-width">
+                                    <label>APF (Patológicos Familiares)</label>
+                                    <textarea name="apf" class="input-field history-input" disabled></textarea>
+                                </div>
+                                <div class="detail-item full-width">
+                                    <label>ALERGIAS</label>
+                                    <textarea name="alergias" class="input-field history-input" disabled></textarea>
+                                </div>
+                                <div class="detail-item full-width">
+                                    <label>AQX (Quirúrgicos)</label>
+                                    <textarea name="aqx" class="input-field history-input" disabled></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card history-card">
+                            <div class="card-title">
+                                <i class="fas fa-venus"></i> Antecedentes Gineco-Obstétricos
+                            </div>
+                            
+                            <div class="detail-grid">
+                                <div class="detail-item"><label>Menarquia (Edad)</label> <input type="text" name="menarquia" class="input-field history-input" disabled></div>
+                                <div class="detail-item"><label>1era Relación Sexual</label> <input type="text" name="prs" class="input-field history-input" disabled></div>
+                                <div class="detail-item"><label>N° Parejas Sexuales</label> <input type="number" name="num_parejas" class="input-field history-input" disabled></div>
+                            </div>
+
+                            <div style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
+                                <label style="font-weight:bold; color:#555;">AGO (Antecedentes Gineco-Obstétricos)</label>
+                                <div style="display:flex; gap:20px; margin-top:5px; flex-wrap:wrap;">
+                                    <label class="check-label"><input type="checkbox" name="ago_g" class="history-input" disabled> G (Gestas)</label>
+                                    <label class="check-label"><input type="checkbox" name="ago_p" class="history-input" disabled> P (Partos)</label>
+                                    <label class="check-label"><input type="checkbox" name="ago_c" class="history-input" disabled> C (Cesáreas)</label>
+                                    <label class="check-label"><input type="checkbox" name="ago_a" class="history-input" disabled> A (Abortos)</label>
+                                </div>
+                            </div>
+
+                            <div class="detail-grid" style="margin-top:15px;">
+                                <div class="detail-item"><label>Fecha de Aborto</label> <input type="date" name="fecha_aborto" class="input-field history-input" disabled></div>
+                                <div class="detail-item"><label>PAP (Papanicolau)</label> <input type="text" name="pap" class="input-field history-input" disabled></div>
+                                <div class="detail-item"><label>FUM (Última Menstruación)</label> <input type="date" name="fum" class="input-field history-input" disabled></div>
+                                <div class="detail-item">
+                                    <label>Anticonceptivos</label> 
+                                    <select name="anticonceptivos" class="input-field history-input" disabled>
+                                        <option value="No">No</option>
+                                        <option value="Si">Si</option>
+                                    </select>
+                                </div>
+                                <div class="detail-item"><label>Tipo Anticonceptivo</label> <input type="text" name="tipo_anti" class="input-field history-input" disabled></div>
+                                <div class="detail-item"><label>Tiempo de Uso</label> <input type="text" name="tiempo_uso" class="input-field history-input" disabled></div>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+
+                <div id="tab-citas" class="tab-content">
+                    <div class="action-bar-right">
+                        <button class="btn-primary-small" onclick="openAppointmentModal()">
+                            <i class="fas fa-plus"></i> Agendar Nueva Cita
+                        </button>
+                    </div>
+                    <div class="clinical-timeline-container">
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-check"></i>
+                            <p>No hay citas futuras registradas.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-diagnostico" class="tab-content">
+                    
+                    <div class="card form-card">
+                        <h3>Nuevo Diagnóstico / Tratamiento</h3>
+                        <form id="formDiagnosis">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Tipo de Examen / Procedimiento</label>
+                                    <select id="diagType" style="padding:10px; border-radius:8px; border:1px solid #ddd;">
+                                        <option value="Consulta">Consulta General</option>
+                                        <option value="Ecografia">Ecografía</option>
+                                        <option value="Laboratorio">Análisis de Laboratorio</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Fecha</label>
+                                    <input type="date" id="diagDate" required style="padding:10px; border-radius:8px; border:1px solid #ddd;">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Diagnóstico / Resultados</label>
+                                <textarea id="diagResult" rows="3" class="input-field" placeholder="Escriba aquí los hallazgos..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Subir Archivo (Link o Drive)</label>
+                                <input type="text" id="diagFile" class="input-field" placeholder="Pegar enlace de Google Drive aquí">
+                            </div>
+
+                            <button type="submit" class="btn-submit">Guardar en Historial</button>
+                        </form>
+                    </div>
+
+                    <hr>
+
+                    <h3>Diagnósticos Anteriores</h3>
+                    <div id="diagnosisList" class="cards-grid">
+                        </div>
+
+                </div>
+
+            </section>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalAppointment">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Agendar Cita</h3>
+                <span class="close-modal" onclick="closeModal('modalAppointment')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="formAppointment">
+                    <input type="hidden" id="apptPatientId">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Fecha</label> <input type="date" id="apptDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Hora</label> 
+                            <select id="apptTime" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; background:white;">
+                                <option value="">Elige fecha primero</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Servicio</label> <select id="apptReason" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;"><option>Cargando...</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nota Interna</label> <textarea id="apptNotes" rows="2" style="width:100%; border:1px solid #ddd; border-radius:8px;"></textarea>
+                    </div>
+                    <div class="form-group" style="background:#fff8e1; padding:10px; border-radius:8px; margin-top:10px;">
+                        <label style="color:#d35400;">Recomendaciones (Paciente)</label> <textarea id="apptRecs" rows="2" style="width:100%; border:1px solid #ffecb3; border-radius:8px;"></textarea>
+                    </div>
+                    <button type="submit" class="btn-submit">Confirmar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- modal de reagendamiento -->
+<div class="modal-overlay" id="modalReschedule">
+        <div class="modal-box" style="max-width: 400px;">
+            <div class="modal-header" style="background: #f39c12;">
+                <h3 style="color:white;"><i class="fas fa-clock"></i> Reagendar Cita</h3>
+                <span class="close-modal" onclick="closeModal('modalReschedule')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="formReschedule">
+                    <input type="hidden" id="reschIdCita">
+                    
+                    <div class="form-group">
+                        <label>Nueva Fecha</label>
+                        <input type="date" id="reschDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Nueva Hora</label>
+                        <select id="reschTime" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                            <option value="">Selecciona fecha...</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn-submit" style="background: #f39c12;">Guardar Cambios</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="js/config.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script src="js/clinical.js"></script>
+    <script src="js/diagnosis.js"></script>
+    <script src="js/history.js"></script>
+</body>
+</html>
