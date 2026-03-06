@@ -1,4 +1,4 @@
-﻿// js/admin.js - VIDAFEM v3.1 (CRUD Completo + Modularidad)
+// js/admin.js - VIDAFEM v3.1 (CRUD Completo + Modularidad)
 
 let allPatients = [];
 let isDeletingPatient = false;
@@ -720,7 +720,7 @@ function setupSearch() {
 // ============================
 function goToClinical(id) {
   // Redirige a la página de historia clínica con el ID
-  window.location.href = `clinical.htmlid=${id}`;
+  window.location.href = `clinical.html?id=${id}`;
 }
 
 // ============================
